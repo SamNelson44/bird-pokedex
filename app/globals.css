@@ -1,26 +1,147 @@
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-pokedex-red: #cc0000;
+  --color-pokedex-darkred: #990000;
+  --color-pokedex-black: #111111;
+  --color-pokedex-screen: #1a1a2e;
+  --color-pokedex-screenlight: #16213e;
+  --color-pokedex-common: #22c55e;
+  --color-pokedex-uncommon: #3b82f6;
+  --color-pokedex-rare: #a855f7;
+  --color-pokedex-legendary: #f59e0b;
+  --color-pokedex-locked: #374151;
+  --font-pixel: "Press Start 2P", monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow-x: hidden;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #111111;
+  color: #ffffff;
+  font-family: "Press Start 2P", monospace;
+  /* safe-area padding so nothing hides behind home indicator */
+  padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* Prevent double-tap zoom delay on buttons and links */
+button, a, label {
+  touch-action: manipulation;
+}
+
+/* Ensure all interactive elements meet 44px minimum tap target */
+.tap-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Fix iOS auto-zoom on input focus (requires font-size >= 16px) */
+input, textarea, select {
+  font-size: 16px;
+  font-family: "Press Start 2P", monospace;
+}
+
+/* Pokédex scanline overlay effect */
+.scanline-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.05) 2px,
+    rgba(0, 0, 0, 0.05) 4px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Locked card silhouette */
+.species-silhouette {
+  filter: brightness(0) invert(0.15);
+}
+
+/* Rarity glow effects */
+.glow-common {
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.5), 0 0 24px rgba(34, 197, 94, 0.2);
+}
+.glow-uncommon {
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.5), 0 0 24px rgba(59, 130, 246, 0.2);
+}
+.glow-rare {
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.5), 0 0 24px rgba(168, 85, 247, 0.2);
+}
+.glow-legendary {
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.7), 0 0 32px rgba(245, 158, 11, 0.4);
+  animation: legendary-pulse 2s ease-in-out infinite;
+}
+
+@keyframes legendary-pulse {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.7), 0 0 32px rgba(245, 158, 11, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(245, 158, 11, 0.9), 0 0 48px rgba(245, 158, 11, 0.6);
+  }
+}
+
+.glow-unknown {
+  box-shadow: 0 0 8px rgba(156, 163, 175, 0.3), 0 0 16px rgba(156, 163, 175, 0.1);
+}
+
+/* Scanner animation */
+@keyframes scan-line {
+  0% { top: -4px; }
+  100% { top: 100%; }
+}
+
+.scan-line {
+  animation: scan-line 1.5s linear infinite;
+}
+
+/* New discovery flash */
+@keyframes discovery-flash {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  25% { opacity: 0; transform: scale(1.05); }
+  50% { opacity: 1; transform: scale(1.05); }
+  75% { opacity: 0.5; transform: scale(1.02); }
+}
+
+.discovery-flash {
+  animation: discovery-flash 0.8s ease-out;
+}
+
+/* Card hover transition */
+.species-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.species-card:hover {
+  transform: translateY(-2px) scale(1.02);
+}
+
+/* Blinking cursor for retro text */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.blink {
+  animation: blink 1s step-end infinite;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #111111; }
+::-webkit-scrollbar-thumb { background: #cc0000; }
