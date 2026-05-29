@@ -3,12 +3,6 @@ import { auth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { clsx } from "clsx";
 
-interface LeaderboardRow {
-  user_id: string;
-  user_name: string;
-  catch_count: number;
-}
-
 const TOTAL_LA_SPECIES = 50;
 
 const rankStyle = (rank: number) => {
@@ -28,8 +22,43 @@ const rankLabel = (rank: number) => {
 export default async function LeaderboardPage() {
   const session = await auth();
 
-  const { data } = await supabase.rpc("get_leaderboard", { limit_count: 50 });
-  const rows = (data as LeaderboardRow[]) ?? [];
+  // 1. Get all LA species IDs (exclude unknowns)
+  const { data: laSpecies } = await supabase
+    .from("species")
+    .select("id")
+    .neq("rarity", "unknown");
+
+  const laSpeciesIds = (laSpecies ?? []).map((s) => s.id);
+
+  // 2. Get every discovery for those species
+  const { data: discoveries } = await supabase
+    .from("discoveries")
+    .select("user_id")
+    .in("species_id", laSpeciesIds.length ? laSpeciesIds : ["none"]);
+
+  // 3. Count per user in JS
+  const countMap = new Map<string, number>();
+  (discoveries ?? []).forEach((d) => {
+    countMap.set(d.user_id, (countMap.get(d.user_id) ?? 0) + 1);
+  });
+
+  const sorted = [...countMap.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 50);
+
+  // 4. Fetch names for the ranked users
+  const userIds = sorted.map(([id]) => id);
+  const { data: users } = userIds.length
+    ? await supabase.from("users").select("id, name").in("id", userIds)
+    : { data: [] };
+
+  const userMap = new Map((users ?? []).map((u) => [u.id, u.name]));
+
+  const rows = sorted.map(([userId, count]) => ({
+    user_id: userId,
+    user_name: (userMap.get(userId) as string) ?? "TRAINER",
+    catch_count: count,
+  }));
 
   const currentUserRank = session?.user?.id
     ? rows.findIndex((r) => r.user_id === session.user.id) + 1
@@ -42,8 +71,8 @@ export default async function LeaderboardPage() {
         className="bg-pokedex-red border-b-4 border-pokedex-darkred px-2 flex justify-between items-center sticky top-0 z-30"
         style={{ paddingTop: "env(safe-area-inset-top, 0px)", minHeight: 56 }}
       >
-        <Link href="/" className="tap-target font-pixel text-white text-[10px] px-2">
-          ◀ HOME
+        <Link href="/pokedex" className="tap-target font-pixel text-white text-[10px] px-2">
+          ◀ DEX
         </Link>
         <span className="font-pixel text-white text-[10px]">LEADERBOARD</span>
         <div className="w-16" />
@@ -83,32 +112,21 @@ export default async function LeaderboardPage() {
                   key={row.user_id}
                   className={clsx(
                     "border-2 bg-pokedex-screen p-3",
-                    isCurrentUser
-                      ? "border-pokedex-red"
-                      : "border-gray-800"
+                    isCurrentUser ? "border-pokedex-red" : "border-gray-800"
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    {/* Rank */}
-                    <span
-                      className={clsx(
-                        "font-pixel text-[10px] w-8 shrink-0 text-center",
-                        rankStyle(rank)
-                      )}
-                    >
+                    <span className={clsx("font-pixel text-[10px] w-8 shrink-0 text-center", rankStyle(rank))}>
                       {rankLabel(rank)}
                     </span>
 
-                    {/* Name + bar */}
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-baseline mb-1">
-                        <span
-                          className={clsx(
-                            "font-pixel text-[9px] truncate",
-                            isCurrentUser ? "text-pokedex-red" : "text-white"
-                          )}
-                        >
-                          {row.user_name ?? "TRAINER"}
+                        <span className={clsx(
+                          "font-pixel text-[9px] truncate",
+                          isCurrentUser ? "text-pokedex-red" : "text-white"
+                        )}>
+                          {row.user_name}
                           {isCurrentUser && (
                             <span className="text-gray-500 ml-2">◀ YOU</span>
                           )}
@@ -117,17 +135,11 @@ export default async function LeaderboardPage() {
                           {row.catch_count}/{TOTAL_LA_SPECIES}
                         </span>
                       </div>
-
-                      {/* Progress bar */}
                       <div className="w-full h-2 bg-gray-800 border border-gray-700">
                         <div
                           className={clsx(
-                            "h-full transition-all",
-                            rank === 1
-                              ? "bg-yellow-400"
-                              : isCurrentUser
-                                ? "bg-pokedex-red"
-                                : "bg-gray-600"
+                            "h-full",
+                            rank === 1 ? "bg-yellow-400" : isCurrentUser ? "bg-pokedex-red" : "bg-gray-600"
                           )}
                           style={{ width: `${pct}%` }}
                         />
