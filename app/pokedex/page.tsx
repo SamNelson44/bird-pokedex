@@ -35,15 +35,14 @@ export default async function PokedexPage() {
         style={{ paddingTop: "env(safe-area-inset-top, 0px)", minHeight: 56 }}
       >
         <Link
-          href="/"
+          href="/leaderboard"
           className="tap-target font-pixel text-white text-[10px] px-2"
         >
-          ◀ HOME
+          🏆
         </Link>
         <span className="font-pixel text-[9px] text-red-200">
           {unlockedIds.size}/{species.length} CAPTURED
         </span>
-        {/* Header scan button — still here for desktop */}
         <Link
           href="/identify"
           className="tap-target font-pixel text-[10px] px-3 bg-black text-pokedex-red border border-red-800"
