@@ -6,11 +6,12 @@ import type { SpeciesRow } from "@/lib/supabase";
 interface Props {
   species: SpeciesRow[];
   unlockedIds: Set<string>;
+  discoveryPhotos: Map<string, string | null>;
 }
 
 const RARITY_ORDER = ["common", "uncommon", "rare", "legendary", "unknown"] as const;
 
-export default function PokedexGrid({ species, unlockedIds }: Props) {
+export default function PokedexGrid({ species, unlockedIds, discoveryPhotos }: Props) {
   const unlockedCount = unlockedIds.size;
 
   return (
@@ -65,6 +66,7 @@ export default function PokedexGrid({ species, unlockedIds }: Props) {
                   key={s.id}
                   species={s}
                   isUnlocked={unlockedIds.has(s.id)}
+                  discoveryPhotoUrl={discoveryPhotos.get(s.id) ?? null}
                 />
               ))}
             </div>

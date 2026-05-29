@@ -6,6 +6,7 @@ import type { SpeciesRow } from "@/lib/supabase";
 interface Props {
   species: SpeciesRow;
   isUnlocked: boolean;
+  discoveryPhotoUrl?: string | null;
 }
 
 const rarityColors: Record<string, string> = {
@@ -32,7 +33,7 @@ const rarityBorders: Record<string, string> = {
   unknown: "border-gray-500/40",
 };
 
-export default function SpeciesCard({ species, isUnlocked }: Props) {
+export default function SpeciesCard({ species, isUnlocked, discoveryPhotoUrl }: Props) {
   const card = (
     <div
       className={clsx(
@@ -53,9 +54,9 @@ export default function SpeciesCard({ species, isUnlocked }: Props) {
       {/* Image area */}
       <div className="relative w-full aspect-square bg-pokedex-screenlight overflow-hidden">
         {isUnlocked ? (
-          species.image_url ? (
+          discoveryPhotoUrl ? (
             <Image
-              src={species.image_url}
+              src={discoveryPhotoUrl}
               alt={species.name}
               fill
               className="object-cover"

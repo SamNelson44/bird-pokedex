@@ -16,13 +16,15 @@ export default async function PokedexPage() {
       .order("pokedex_number", { ascending: true }),
     supabase
       .from("discoveries")
-      .select("species_id")
+      .select("species_id, photo_url")
       .eq("user_id", session.user.id),
   ]);
 
   const species = (speciesResult.data as SpeciesRow[]) ?? [];
-  const unlockedIds = new Set(
-    (discoveriesResult.data ?? []).map((d) => d.species_id as string)
+  const discoveries = discoveriesResult.data ?? [];
+  const unlockedIds = new Set(discoveries.map((d) => d.species_id as string));
+  const discoveryPhotos = new Map<string, string | null>(
+    discoveries.map((d) => [d.species_id as string, d.photo_url as string | null])
   );
 
   return (
@@ -67,7 +69,7 @@ export default async function PokedexPage() {
             </p>
           </div>
         ) : (
-          <PokedexGrid species={species} unlockedIds={unlockedIds} />
+          <PokedexGrid species={species} unlockedIds={unlockedIds} discoveryPhotos={discoveryPhotos} />
         )}
       </div>
 
