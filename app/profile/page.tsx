@@ -20,6 +20,11 @@ export default async function ProfilePage() {
   ]);
 
   const user = userResult.data;
+
+  // If user record not found, the session JWT has a stale UUID (e.g. after a DB reset).
+  // Force sign-out so they get a fresh JWT on next login.
+  if (!user) redirect("/api/auth/signout");
+
   const laSpeciesIds = new Set((laSpeciesResult.data ?? []).map((s) => s.id));
   const allDiscoveries = allDiscoveriesResult.data ?? [];
 
