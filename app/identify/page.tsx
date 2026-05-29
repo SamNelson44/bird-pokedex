@@ -1,23 +1,12 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import ScannerUI from "@/components/ScannerUI";
 import IdentificationResult from "@/components/IdentificationResult";
 import type { IdentifyResponse } from "@/components/IdentificationResult";
 
 type Stage = "idle" | "preview" | "scanning" | "result";
-
-// Visually hidden but still accessible — iOS Safari requires this for
-// label-triggered file inputs. `display:none` silently breaks camera on iOS.
-const hiddenInputStyle: React.CSSProperties = {
-  position: "absolute",
-  width: "1px",
-  height: "1px",
-  overflow: "hidden",
-  opacity: 0,
-  pointerEvents: "none",
-};
 
 export default function IdentifyPage() {
   const [stage, setStage] = useState<Stage>("idle");
@@ -29,43 +18,20 @@ export default function IdentifyPage() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = useCallback((file: File) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     setSelectedFile(file);
     setImagePreview(URL.createObjectURL(file));
     setStage("preview");
     setError("");
   }, []);
 
-  // Use native DOM listeners — more reliable than React's synthetic onChange on iOS Safari
-  useEffect(() => {
-    const cameraEl = cameraInputRef.current;
-    const galleryEl = galleryInputRef.current;
-
-    const onCameraChange = () => {
-      const file = cameraEl?.files?.[0];
-      if (file) handleFile(file);
-    };
-    const onGalleryChange = () => {
-      const file = galleryEl?.files?.[0];
-      if (file) handleFile(file);
-    };
-
-    cameraEl?.addEventListener("change", onCameraChange);
-    galleryEl?.addEventListener("change", onGalleryChange);
-
-    return () => {
-      cameraEl?.removeEventListener("change", onCameraChange);
-      galleryEl?.removeEventListener("change", onGalleryChange);
-    };
-  }, [handleFile]);
-
   const handleScan = useCallback(async () => {
     if (!selectedFile) return;
     setStage("scanning");
-
     const formData = new FormData();
     formData.append("image", selectedFile);
-
     try {
       const res = await fetch("/api/identify", { method: "POST", body: formData });
       const data: IdentifyResponse = await res.json();
@@ -106,25 +72,6 @@ export default function IdentifyPage() {
         <div className="w-16" />
       </div>
 
-      {/* Visually-hidden file inputs — positioned off-screen, NOT display:none */}
-      <input
-        ref={cameraInputRef}
-        id="camera-input"
-        type="file"
-        accept="image/*"
-        capture="environment"
-        style={hiddenInputStyle}
-        aria-hidden="true"
-      />
-      <input
-        ref={galleryInputRef}
-        id="gallery-input"
-        type="file"
-        accept="image/*"
-        style={hiddenInputStyle}
-        aria-hidden="true"
-      />
-
       <div className="flex-1 flex flex-col px-4 py-6 max-w-lg mx-auto w-full">
 
         {/* ── IDLE ─────────────────────────────────────────────── */}
@@ -133,30 +80,61 @@ export default function IdentifyPage() {
             <div className="text-center mb-6">
               <p className="font-pixel text-xs text-white mb-2">SCAN A BIRD</p>
               <p className="font-pixel text-[8px] text-gray-500 leading-relaxed">
-                Spot a bird? Take a photo or choose one from your gallery to
-                identify it and add it to your LA BirdDex.
+                Spot a bird? Take a photo or choose one from your gallery.
               </p>
             </div>
 
             <div className="flex flex-col gap-4">
-              <label
-                htmlFor="camera-input"
-                className="flex flex-col items-center justify-center gap-3 w-full border-2 border-pokedex-red bg-pokedex-red/10 active:bg-pokedex-red/20 cursor-pointer"
-                style={{ minHeight: 120 }}
-              >
-                <span className="text-5xl">📷</span>
-                <span className="font-pixel text-[10px] text-pokedex-red">TAKE PHOTO</span>
-                <span className="font-pixel text-[7px] text-gray-600">OPENS CAMERA</span>
-              </label>
+              {/*
+                Overlay pattern: the <input> sits on top of the visual button at
+                full size with opacity:0. The user taps the input directly —
+                no label→input delegation needed, which is what breaks on iOS.
+              */}
+              <div className="relative overflow-hidden" style={{ minHeight: 120 }}>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 border-2 border-pokedex-red bg-pokedex-red/10 pointer-events-none">
+                  <span className="text-5xl">📷</span>
+                  <span className="font-pixel text-[10px] text-pokedex-red">TAKE PHOTO</span>
+                  <span className="font-pixel text-[7px] text-gray-600">OPENS CAMERA</span>
+                </div>
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileChange}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    opacity: 0,
+                    width: "100%",
+                    height: "100%",
+                    cursor: "pointer",
+                    fontSize: "16px",
+                  }}
+                />
+              </div>
 
-              <label
-                htmlFor="gallery-input"
-                className="flex flex-col items-center justify-center gap-3 w-full border-2 border-gray-600 bg-pokedex-screen active:bg-pokedex-screenlight cursor-pointer"
-                style={{ minHeight: 100 }}
-              >
-                <span className="text-4xl">🖼️</span>
-                <span className="font-pixel text-[10px] text-gray-300">CHOOSE FROM GALLERY</span>
-              </label>
+              <div className="relative overflow-hidden" style={{ minHeight: 100 }}>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 border-2 border-gray-600 bg-pokedex-screen pointer-events-none">
+                  <span className="text-4xl">🖼️</span>
+                  <span className="font-pixel text-[10px] text-gray-300">CHOOSE FROM GALLERY</span>
+                </div>
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    opacity: 0,
+                    width: "100%",
+                    height: "100%",
+                    cursor: "pointer",
+                    fontSize: "16px",
+                  }}
+                />
+              </div>
             </div>
 
             <p className="font-pixel text-[7px] text-gray-700 text-center mt-6">
