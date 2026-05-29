@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import ScannerUI from "@/components/ScannerUI";
 import IdentificationResult from "@/components/IdentificationResult";
@@ -23,6 +23,23 @@ export default function IdentifyPage() {
     setImagePreview(URL.createObjectURL(file));
     setStage("preview");
     setError("");
+  }, []);
+
+  // Direct native DOM listener — bypasses React's synthetic event system
+  // which fails to fire on some iOS Safari versions for file inputs
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    const onNativeChange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      setSelectedFile(file);
+      setImagePreview(URL.createObjectURL(file));
+      setStage("preview");
+      setError("");
+    };
+    input.addEventListener("change", onNativeChange);
+    return () => input.removeEventListener("change", onNativeChange);
   }, []);
 
   const handleScan = useCallback(async () => {
