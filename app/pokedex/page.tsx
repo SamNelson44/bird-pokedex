@@ -36,9 +36,9 @@ export default async function PokedexPage() {
       >
         <Link
           href="/leaderboard"
-          className="tap-target font-pixel text-white text-[10px] px-2"
+          className="tap-target font-pixel text-[10px] px-3 bg-black text-white border border-red-800"
         >
-          🏆
+          RANKS
         </Link>
         <span className="font-pixel text-[9px] text-red-200">
           {unlockedIds.size}/{species.length} CAPTURED
