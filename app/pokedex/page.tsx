@@ -44,10 +44,10 @@ export default async function PokedexPage() {
           {unlockedIds.size}/{species.length} CAPTURED
         </span>
         <Link
-          href="/identify"
-          className="tap-target font-pixel text-[10px] px-3 bg-black text-pokedex-red border border-red-800"
+          href="/profile"
+          className="tap-target font-pixel text-[10px] px-3 bg-black text-white border border-red-800"
         >
-          SCAN ▶
+          PROFILE
         </Link>
       </div>
 

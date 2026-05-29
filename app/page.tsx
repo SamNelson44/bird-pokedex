@@ -13,14 +13,17 @@ export default async function Home() {
         </span>
         {session?.user ? (
           <div className="flex items-center gap-3">
-            <span className="font-pixel text-[8px] text-red-200">
-              {session.user.name?.split(" ")[0]?.toUpperCase()}
-            </span>
             <Link
               href="/pokedex"
               className="font-pixel text-[8px] px-3 py-1 bg-black text-white border border-red-800 hover:bg-gray-900"
             >
               MY DEX
+            </Link>
+            <Link
+              href="/profile"
+              className="font-pixel text-[8px] px-3 py-1 bg-black text-white border border-red-800 hover:bg-gray-900"
+            >
+              PROFILE
             </Link>
           </div>
         ) : (
