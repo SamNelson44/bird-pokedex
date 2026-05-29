@@ -1,12 +1,23 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Link from "next/link";
 import ScannerUI from "@/components/ScannerUI";
 import IdentificationResult from "@/components/IdentificationResult";
 import type { IdentifyResponse } from "@/components/IdentificationResult";
 
 type Stage = "idle" | "preview" | "scanning" | "result";
+
+// Visually hidden but still accessible — iOS Safari requires this for
+// label-triggered file inputs. `display:none` silently breaks camera on iOS.
+const hiddenInputStyle: React.CSSProperties = {
+  position: "absolute",
+  width: "1px",
+  height: "1px",
+  overflow: "hidden",
+  opacity: 0,
+  pointerEvents: "none",
+};
 
 export default function IdentifyPage() {
   const [stage, setStage] = useState<Stage>("idle");
@@ -15,21 +26,38 @@ export default function IdentifyPage() {
   const [result, setResult] = useState<IdentifyResponse | null>(null);
   const [error, setError] = useState<string>("");
 
-  // Two separate inputs: one forces camera, one opens gallery
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      setSelectedFile(file);
-      setImagePreview(URL.createObjectURL(file));
-      setStage("preview");
-      setError("");
-    },
-    []
-  );
+  const handleFile = useCallback((file: File) => {
+    setSelectedFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    setStage("preview");
+    setError("");
+  }, []);
+
+  // Use native DOM listeners — more reliable than React's synthetic onChange on iOS Safari
+  useEffect(() => {
+    const cameraEl = cameraInputRef.current;
+    const galleryEl = galleryInputRef.current;
+
+    const onCameraChange = () => {
+      const file = cameraEl?.files?.[0];
+      if (file) handleFile(file);
+    };
+    const onGalleryChange = () => {
+      const file = galleryEl?.files?.[0];
+      if (file) handleFile(file);
+    };
+
+    cameraEl?.addEventListener("change", onCameraChange);
+    galleryEl?.addEventListener("change", onGalleryChange);
+
+    return () => {
+      cameraEl?.removeEventListener("change", onCameraChange);
+      galleryEl?.removeEventListener("change", onGalleryChange);
+    };
+  }, [handleFile]);
 
   const handleScan = useCallback(async () => {
     if (!selectedFile) return;
@@ -66,41 +94,39 @@ export default function IdentifyPage() {
 
   return (
     <div className="flex-1 flex flex-col">
-      {/* Header — tall enough for easy tapping */}
-      <div className="bg-pokedex-red border-b-4 border-pokedex-darkred px-4 flex justify-between items-center"
-           style={{ paddingTop: 'env(safe-area-inset-top, 12px)', minHeight: 56 }}>
-        <Link
-          href="/pokedex"
-          className="tap-target font-pixel text-white text-[10px] pr-4"
-        >
+      {/* Header */}
+      <div
+        className="bg-pokedex-red border-b-4 border-pokedex-darkred px-4 flex justify-between items-center"
+        style={{ paddingTop: "env(safe-area-inset-top, 12px)", minHeight: 56 }}
+      >
+        <Link href="/pokedex" className="tap-target font-pixel text-white text-[10px] pr-4">
           ◀ DEX
         </Link>
-        <span className="font-pixel text-white text-[10px] tracking-widest">
-          SCANNER
-        </span>
+        <span className="font-pixel text-white text-[10px] tracking-widest">SCANNER</span>
         <div className="w-16" />
       </div>
 
-      {/* Hidden file inputs */}
+      {/* Visually-hidden file inputs — positioned off-screen, NOT display:none */}
       <input
         ref={cameraInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        capture="environment"
-        onChange={handleFileSelect}
-        className="hidden"
         id="camera-input"
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={hiddenInputStyle}
+        aria-hidden="true"
       />
       <input
         ref={galleryInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        onChange={handleFileSelect}
-        className="hidden"
         id="gallery-input"
+        type="file"
+        accept="image/*"
+        style={hiddenInputStyle}
+        aria-hidden="true"
       />
 
       <div className="flex-1 flex flex-col px-4 py-6 max-w-lg mx-auto w-full">
+
         {/* ── IDLE ─────────────────────────────────────────────── */}
         {stage === "idle" && (
           <div className="flex-1 flex flex-col justify-between">
@@ -112,7 +138,6 @@ export default function IdentifyPage() {
               </p>
             </div>
 
-            {/* Two big action buttons — easy to tap outdoors */}
             <div className="flex flex-col gap-4">
               <label
                 htmlFor="camera-input"
@@ -120,12 +145,8 @@ export default function IdentifyPage() {
                 style={{ minHeight: 120 }}
               >
                 <span className="text-5xl">📷</span>
-                <span className="font-pixel text-[10px] text-pokedex-red">
-                  TAKE PHOTO
-                </span>
-                <span className="font-pixel text-[7px] text-gray-600">
-                  OPENS CAMERA
-                </span>
+                <span className="font-pixel text-[10px] text-pokedex-red">TAKE PHOTO</span>
+                <span className="font-pixel text-[7px] text-gray-600">OPENS CAMERA</span>
               </label>
 
               <label
@@ -134,9 +155,7 @@ export default function IdentifyPage() {
                 style={{ minHeight: 100 }}
               >
                 <span className="text-4xl">🖼️</span>
-                <span className="font-pixel text-[10px] text-gray-300">
-                  CHOOSE FROM GALLERY
-                </span>
+                <span className="font-pixel text-[10px] text-gray-300">CHOOSE FROM GALLERY</span>
               </label>
             </div>
 
@@ -149,16 +168,11 @@ export default function IdentifyPage() {
         {/* ── PREVIEW ──────────────────────────────────────────── */}
         {stage === "preview" && imagePreview && (
           <div className="flex-1 flex flex-col gap-4">
-            <p className="font-pixel text-[9px] text-gray-400 text-center">
-              READY TO SCAN
-            </p>
+            <p className="font-pixel text-[9px] text-gray-400 text-center">READY TO SCAN</p>
             <ScannerUI imagePreview={imagePreview} isScanning={false} />
             {error && (
-              <p className="font-pixel text-[8px] text-red-400 text-center">
-                ⚠ {error}
-              </p>
+              <p className="font-pixel text-[8px] text-red-400 text-center">⚠ {error}</p>
             )}
-            {/* Buttons at the bottom where thumbs can reach */}
             <div className="mt-auto flex flex-col gap-3">
               <button
                 onClick={handleScan}
@@ -181,9 +195,7 @@ export default function IdentifyPage() {
         {/* ── SCANNING ─────────────────────────────────────────── */}
         {stage === "scanning" && imagePreview && (
           <div className="flex-1 flex flex-col gap-4 items-center justify-center">
-            <p className="font-pixel text-[9px] text-pokedex-red text-center blink">
-              ANALYZING...
-            </p>
+            <p className="font-pixel text-[9px] text-pokedex-red text-center blink">ANALYZING...</p>
             <ScannerUI imagePreview={imagePreview} isScanning={true} />
           </div>
         )}
@@ -191,9 +203,7 @@ export default function IdentifyPage() {
         {/* ── RESULT ───────────────────────────────────────────── */}
         {stage === "result" && result && (
           <div className="flex-1 flex flex-col gap-4">
-            <p className="font-pixel text-[9px] text-gray-400 text-center">
-              SCAN COMPLETE
-            </p>
+            <p className="font-pixel text-[9px] text-gray-400 text-center">SCAN COMPLETE</p>
             <IdentificationResult result={result} onTryAgain={handleTryAgain} />
           </div>
         )}

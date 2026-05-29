@@ -1,37 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { registerAction } from "@/app/actions/auth";
 
 export default function SignUpPage() {
-  const router = useRouter();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, name }),
-    });
-
-    setLoading(false);
-
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Registration failed");
-    } else {
-      router.push("/signin?registered=1");
-    }
-  }
+  const [error, formAction, isPending] = useActionState(registerAction, "");
 
   return (
     <div className="flex-1 flex flex-col">
@@ -47,15 +21,15 @@ export default function SignUpPage() {
               CREATE YOUR ACCOUNT
             </p>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <form action={formAction} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
-                <label className="font-pixel text-[7px] text-gray-400">
+                <label htmlFor="name" className="font-pixel text-[7px] text-gray-400">
                   TRAINER NAME
                 </label>
                 <input
+                  id="name"
+                  name="name"
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
                   placeholder="optional"
                   autoComplete="name"
                   className="bg-black border-2 border-gray-700 text-white font-pixel px-3 py-2 focus:outline-none focus:border-pokedex-red placeholder:text-gray-700"
@@ -63,11 +37,11 @@ export default function SignUpPage() {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="font-pixel text-[7px] text-gray-400">EMAIL</label>
+                <label htmlFor="email" className="font-pixel text-[7px] text-gray-400">EMAIL</label>
                 <input
+                  id="email"
+                  name="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
                   className="bg-black border-2 border-gray-700 text-white font-pixel px-3 py-2 focus:outline-none focus:border-pokedex-red"
@@ -75,21 +49,19 @@ export default function SignUpPage() {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="font-pixel text-[7px] text-gray-400">
+                <label htmlFor="password" className="font-pixel text-[7px] text-gray-400">
                   PASSWORD
                 </label>
                 <input
+                  id="password"
+                  name="password"
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
                   autoComplete="new-password"
                   className="bg-black border-2 border-gray-700 text-white font-pixel px-3 py-2 focus:outline-none focus:border-pokedex-red"
                 />
-                <span className="font-pixel text-[6px] text-gray-600">
-                  MIN 6 CHARACTERS
-                </span>
+                <span className="font-pixel text-[6px] text-gray-600">MIN 6 CHARACTERS</span>
               </div>
 
               {error && (
@@ -98,10 +70,10 @@ export default function SignUpPage() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={isPending}
                 className="font-pixel text-[9px] bg-pokedex-red text-white border-2 border-pokedex-darkred hover:bg-pokedex-darkred disabled:opacity-50 transition-colors tap-target w-full"
               >
-                {loading ? "CREATING..." : "▶ CREATE ACCOUNT"}
+                {isPending ? "CREATING..." : "▶ CREATE ACCOUNT"}
               </button>
             </form>
           </div>
