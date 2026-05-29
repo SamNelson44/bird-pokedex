@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
   // Match against LA species list
   const { data: allSpecies } = await supabase
     .from("species")
-    .select("id, name, aliases");
+    .select("id, name, aliases, scientific_name, rarity");
 
   const claudeName = identification.common_name?.toLowerCase() ?? "";
   const claudeScientific = identification.scientific_name?.toLowerCase() ?? "";
@@ -189,6 +189,7 @@ export async function POST(req: NextRequest) {
     scientific_name: identification.scientific_name,
     confidence: identification.confidence,
     description: identification.description,
+    rarity: inLaList ? (matched as SpeciesRow)?.rarity : "unknown",
   });
 }
 

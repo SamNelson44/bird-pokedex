@@ -14,33 +14,35 @@ export default function IdentifyPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [result, setResult] = useState<IdentifyResponse | null>(null);
   const [error, setError] = useState<string>("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFile = useCallback((file: File) => {
     setSelectedFile(file);
     setImagePreview(URL.createObjectURL(file));
     setStage("preview");
     setError("");
   }, []);
 
-  // Direct native DOM listener — bypasses React's synthetic event system
-  // which fails to fire on some iOS Safari versions for file inputs
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  }, [handleFile]);
+
+  // Native DOM listeners as fallback — React's synthetic onChange can fail
+  // on older iOS Safari versions even when the file is visibly selected
   useEffect(() => {
-    const input = inputRef.current;
-    if (!input) return;
-    const onNativeChange = () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      setSelectedFile(file);
-      setImagePreview(URL.createObjectURL(file));
-      setStage("preview");
-      setError("");
+    const camera = cameraInputRef.current;
+    const gallery = galleryInputRef.current;
+    const onCamera = () => { const f = camera?.files?.[0]; if (f) handleFile(f); };
+    const onGallery = () => { const f = gallery?.files?.[0]; if (f) handleFile(f); };
+    camera?.addEventListener("change", onCamera);
+    gallery?.addEventListener("change", onGallery);
+    return () => {
+      camera?.removeEventListener("change", onCamera);
+      gallery?.removeEventListener("change", onGallery);
     };
-    input.addEventListener("change", onNativeChange);
-    return () => input.removeEventListener("change", onNativeChange);
-  }, []);
+  }, [handleFile]);
 
   const handleScan = useCallback(async () => {
     if (!selectedFile) return;
@@ -69,8 +71,20 @@ export default function IdentifyPage() {
     setSelectedFile(null);
     setResult(null);
     setError("");
-    if (inputRef.current) inputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (galleryInputRef.current) galleryInputRef.current.value = "";
   }, []);
+
+  const overlayInputStyle: React.CSSProperties = {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    opacity: 0,
+    cursor: "pointer",
+    fontSize: "16px",
+  };
 
   return (
     <div className="flex-1 flex flex-col">
@@ -90,28 +104,49 @@ export default function IdentifyPage() {
 
         {/* ── IDLE ─────────────────────────────────────────────── */}
         {stage === "idle" && (
-          <div className="flex-1 flex flex-col justify-center gap-8">
-            <div className="text-center">
+          <div className="flex-1 flex flex-col justify-between">
+            <div className="text-center mb-6">
               <p className="font-pixel text-xs text-white mb-2">SCAN A BIRD</p>
               <p className="font-pixel text-[8px] text-gray-500 leading-relaxed">
-                Choose a photo or take one with your camera.
+                Spot a bird? Take a photo or choose one from your gallery.
               </p>
             </div>
 
-            {/* Plain visible file input — no tricks, maximum iOS compatibility */}
-            <div className="flex flex-col items-center gap-4">
-              <span style={{ fontSize: 64 }}>📷</span>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                style={{ fontSize: "16px", color: "white" }}
-                className="font-pixel text-white w-full"
-              />
+            <div className="flex flex-col gap-4">
+              {/* Camera button */}
+              <div className="relative" style={{ minHeight: 120 }}>
+                <div className="absolute top-0 left-0 right-0 bottom-0 flex flex-col items-center justify-center gap-3 border-2 border-pokedex-red bg-pokedex-red/10 pointer-events-none">
+                  <span className="text-5xl">📷</span>
+                  <span className="font-pixel text-[10px] text-pokedex-red">TAKE PHOTO</span>
+                  <span className="font-pixel text-[7px] text-gray-600">OPENS CAMERA</span>
+                </div>
+                <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileChange}
+                  style={overlayInputStyle}
+                />
+              </div>
+
+              {/* Gallery button */}
+              <div className="relative" style={{ minHeight: 100 }}>
+                <div className="absolute top-0 left-0 right-0 bottom-0 flex flex-col items-center justify-center gap-3 border-2 border-gray-600 bg-pokedex-screen pointer-events-none">
+                  <span className="text-4xl">🖼️</span>
+                  <span className="font-pixel text-[10px] text-gray-300">CHOOSE FROM GALLERY</span>
+                </div>
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  style={overlayInputStyle}
+                />
+              </div>
             </div>
 
-            <p className="font-pixel text-[7px] text-gray-700 text-center">
+            <p className="font-pixel text-[7px] text-gray-700 text-center mt-6">
               20 SCANS PER DAY
             </p>
           </div>

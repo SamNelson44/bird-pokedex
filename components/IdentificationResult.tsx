@@ -12,8 +12,17 @@ export interface IdentifyResponse {
   scientific_name?: string;
   confidence?: "high" | "medium" | "low";
   description?: string;
+  rarity?: "common" | "uncommon" | "rare" | "legendary" | "unknown";
   error?: string;
 }
+
+const rarityColors: Record<string, string> = {
+  common: "text-pokedex-common border-pokedex-common",
+  uncommon: "text-pokedex-uncommon border-pokedex-uncommon",
+  rare: "text-pokedex-rare border-pokedex-rare",
+  legendary: "text-pokedex-legendary border-pokedex-legendary",
+  unknown: "text-gray-400 border-gray-400",
+};
 
 interface Props {
   result: IdentifyResponse;
@@ -119,11 +128,21 @@ export default function IdentificationResult({ result, onTryAgain }: Props) {
           <p className="font-pixel text-[8px] text-gray-400 italic mb-2">
             {result.scientific_name}
           </p>
-          {result.confidence && (
-            <p className={clsx("font-pixel text-[7px]", confidenceColors[result.confidence])}>
-              CONFIDENCE: {result.confidence.toUpperCase()}
-            </p>
-          )}
+          <div className="flex items-center gap-3 mt-2">
+            {result.rarity && (
+              <span className={clsx(
+                "font-pixel text-[7px] px-2 py-1 border",
+                rarityColors[result.rarity] ?? "text-gray-400 border-gray-400"
+              )}>
+                ◆ {result.rarity.toUpperCase()}
+              </span>
+            )}
+            {result.confidence && (
+              <p className={clsx("font-pixel text-[7px]", confidenceColors[result.confidence])}>
+                {result.confidence.toUpperCase()} CONFIDENCE
+              </p>
+            )}
+          </div>
         </div>
 
         {result.description && (
