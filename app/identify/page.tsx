@@ -14,9 +14,7 @@ export default function IdentifyPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [result, setResult] = useState<IdentifyResponse | null>(null);
   const [error, setError] = useState<string>("");
-
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,8 +52,7 @@ export default function IdentifyPage() {
     setSelectedFile(null);
     setResult(null);
     setError("");
-    if (cameraInputRef.current) cameraInputRef.current.value = "";
-    if (galleryInputRef.current) galleryInputRef.current.value = "";
+    if (inputRef.current) inputRef.current.value = "";
   }, []);
 
   return (
@@ -80,61 +77,43 @@ export default function IdentifyPage() {
             <div className="text-center mb-6">
               <p className="font-pixel text-xs text-white mb-2">SCAN A BIRD</p>
               <p className="font-pixel text-[8px] text-gray-500 leading-relaxed">
-                Spot a bird? Take a photo or choose one from your gallery.
+                Tap below to take a photo or choose from your gallery.
               </p>
             </div>
 
-            <div className="flex flex-col gap-4">
-              {/*
-                Overlay pattern: the <input> sits on top of the visual button at
-                full size with opacity:0. The user taps the input directly —
-                no label→input delegation needed, which is what breaks on iOS.
-              */}
-              <div className="relative overflow-hidden" style={{ minHeight: 120 }}>
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 border-2 border-pokedex-red bg-pokedex-red/10 pointer-events-none">
-                  <span className="text-5xl">📷</span>
-                  <span className="font-pixel text-[10px] text-pokedex-red">TAKE PHOTO</span>
-                  <span className="font-pixel text-[7px] text-gray-600">OPENS CAMERA</span>
-                </div>
-                <input
-                  ref={cameraInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleFileChange}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    opacity: 0,
-                    width: "100%",
-                    height: "100%",
-                    cursor: "pointer",
-                    fontSize: "16px",
-                  }}
-                />
+            {/*
+              No `capture` attribute — iOS opens its native action sheet
+              (Camera / Photo Library) which stays in-browser and doesn't
+              background Safari, preventing the page reload that wipes state.
+              The input overlays the button at full size so the user taps it directly.
+            */}
+            <div
+              className="relative border-2 border-pokedex-red bg-pokedex-red/10"
+              style={{ minHeight: 160 }}
+            >
+              <div className="absolute top-0 left-0 right-0 bottom-0 flex flex-col items-center justify-center gap-3 pointer-events-none">
+                <span style={{ fontSize: 56 }}>📷</span>
+                <span className="font-pixel text-[11px] text-pokedex-red">TAP TO SCAN</span>
+                <span className="font-pixel text-[7px] text-gray-500">CAMERA OR GALLERY</span>
               </div>
-
-              <div className="relative overflow-hidden" style={{ minHeight: 100 }}>
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 border-2 border-gray-600 bg-pokedex-screen pointer-events-none">
-                  <span className="text-4xl">🖼️</span>
-                  <span className="font-pixel text-[10px] text-gray-300">CHOOSE FROM GALLERY</span>
-                </div>
-                <input
-                  ref={galleryInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    opacity: 0,
-                    width: "100%",
-                    height: "100%",
-                    cursor: "pointer",
-                    fontSize: "16px",
-                  }}
-                />
-              </div>
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: "100%",
+                  height: "100%",
+                  opacity: 0,
+                  cursor: "pointer",
+                  fontSize: "16px",
+                }}
+              />
             </div>
 
             <p className="font-pixel text-[7px] text-gray-700 text-center mt-6">
@@ -161,7 +140,7 @@ export default function IdentifyPage() {
               </button>
               <button
                 onClick={handleTryAgain}
-                className="w-full font-pixel text-[10px] py-3 bg-transparent text-gray-400 border-2 border-gray-700 active:border-gray-500"
+                className="w-full font-pixel text-[10px] py-3 bg-transparent text-gray-400 border-2 border-gray-700"
                 style={{ minHeight: 48 }}
               >
                 RETAKE
