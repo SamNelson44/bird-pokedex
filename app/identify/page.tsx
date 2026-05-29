@@ -73,50 +73,28 @@ export default function IdentifyPage() {
 
         {/* ── IDLE ─────────────────────────────────────────────── */}
         {stage === "idle" && (
-          <div className="flex-1 flex flex-col justify-between">
-            <div className="text-center mb-6">
+          <div className="flex-1 flex flex-col justify-center gap-8">
+            <div className="text-center">
               <p className="font-pixel text-xs text-white mb-2">SCAN A BIRD</p>
               <p className="font-pixel text-[8px] text-gray-500 leading-relaxed">
-                Tap below to take a photo or choose from your gallery.
+                Choose a photo or take one with your camera.
               </p>
             </div>
 
-            {/*
-              No `capture` attribute — iOS opens its native action sheet
-              (Camera / Photo Library) which stays in-browser and doesn't
-              background Safari, preventing the page reload that wipes state.
-              The input overlays the button at full size so the user taps it directly.
-            */}
-            <div
-              className="relative border-2 border-pokedex-red bg-pokedex-red/10"
-              style={{ minHeight: 160 }}
-            >
-              <div className="absolute top-0 left-0 right-0 bottom-0 flex flex-col items-center justify-center gap-3 pointer-events-none">
-                <span style={{ fontSize: 56 }}>📷</span>
-                <span className="font-pixel text-[11px] text-pokedex-red">TAP TO SCAN</span>
-                <span className="font-pixel text-[7px] text-gray-500">CAMERA OR GALLERY</span>
-              </div>
+            {/* Plain visible file input — no tricks, maximum iOS compatibility */}
+            <div className="flex flex-col items-center gap-4">
+              <span style={{ fontSize: 64 }}>📷</span>
               <input
                 ref={inputRef}
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  width: "100%",
-                  height: "100%",
-                  opacity: 0,
-                  cursor: "pointer",
-                  fontSize: "16px",
-                }}
+                style={{ fontSize: "16px", color: "white" }}
+                className="font-pixel text-white w-full"
               />
             </div>
 
-            <p className="font-pixel text-[7px] text-gray-700 text-center mt-6">
+            <p className="font-pixel text-[7px] text-gray-700 text-center">
               20 SCANS PER DAY
             </p>
           </div>
