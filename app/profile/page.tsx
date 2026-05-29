@@ -21,9 +21,22 @@ export default async function ProfilePage() {
 
   const user = userResult.data;
 
-  // If user record not found, the session JWT has a stale UUID (e.g. after a DB reset).
-  // Force sign-out so they get a fresh JWT on next login.
-  if (!user) redirect("/api/auth/signout");
+  // If user record not found, session JWT has a stale UUID (e.g. after a DB reset).
+  // Show a clear message rather than auto-redirecting.
+  if (!user) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-4 gap-6">
+        <p className="font-pixel text-[9px] text-gray-400 text-center leading-relaxed">
+          SESSION OUT OF DATE
+        </p>
+        <p className="font-pixel text-[7px] text-gray-600 text-center leading-relaxed">
+          Your session no longer matches the database.
+          Sign out and sign back in to fix this.
+        </p>
+        <SignOutButton />
+      </div>
+    );
+  }
 
   const laSpeciesIds = new Set((laSpeciesResult.data ?? []).map((s) => s.id));
   const allDiscoveries = allDiscoveriesResult.data ?? [];
